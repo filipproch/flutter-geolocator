@@ -177,22 +177,13 @@ class Geolocator {
   /// instance [LocationOptions] class. When you don't supply any specific
   /// options, default values will be used for each setting.
   Stream<Position> getPositionStream(
-      [LocationOptions locationOptions = const LocationOptions(),
-      GeolocationPermission locationPermissionLevel =
-          GeolocationPermission.location]) async* {
-    final PermissionStatus permission = await _getLocationPermission(
-        toPermissionLevel(locationPermissionLevel));
+      [LocationOptions locationOptions = const LocationOptions()]) async* {
+    _onPositionChanged ??= _eventChannel
+        .receiveBroadcastStream(Codec.encodeLocationOptions(locationOptions))
+        .map<Position>((dynamic element) =>
+            Position.fromMap(element.cast<String, dynamic>()));
 
-    if (permission == PermissionStatus.granted) {
-      _onPositionChanged ??= _eventChannel
-          .receiveBroadcastStream(Codec.encodeLocationOptions(locationOptions))
-          .map<Position>((dynamic element) =>
-              Position.fromMap(element.cast<String, dynamic>()));
-
-      yield* _onPositionChanged;
-    } else {
-      _handleInvalidPermissions(permission);
-    }
+    yield* _onPositionChanged;
   }
 
   Future<PermissionStatus> _getLocationPermission(
